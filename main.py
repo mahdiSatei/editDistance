@@ -2,11 +2,15 @@ import tkinter as tk
 from tkinter import ttk
 import runner
 import re
+import time
 
 dic = {}
+start_time = None
 
 
 def on_language_change(event):
+    global start_time
+
     selected_language = language_var.get()
 
     if selected_language == "English":
@@ -19,7 +23,7 @@ def on_language_change(event):
 
 
 def show_textbox(selected_language):
-    global input_textbox, check_button
+    global input_textbox, check_button, elapsed_time_label
 
     input_textbox = tk.Text(root, height=10, width=40, wrap="word", font="tahoma")
     input_textbox.pack(pady=10)
@@ -33,10 +37,13 @@ def show_textbox(selected_language):
     input_textbox.bind('<Control-v>', paste)  # Bind paste event to paste method
     input_textbox.bind("<Button-3>", show_suggestions_menu)  # Bind right-click event to show_suggestions_menu
 
-    check_button = tk.Button(root, text="Check Text",font="tahoma" , command=check_full_text)
+    check_button = tk.Button(root, text="Check Text", font="tahoma", command=check_full_text)
     check_button.pack(pady=10)
 
     input_textbox.tag_configure("incorrect", foreground="red", underline=True)
+
+    # Initialize the elapsed time label but do not pack it yet
+    elapsed_time_label = tk.Label(root, text="Elapsed Time: 0.00 seconds", font="tahoma")
 
 
 def apply_right_tag(event=None):
@@ -71,8 +78,12 @@ def check_text(event):
 
 
 def check_full_text():
+    global start_time, elapsed_time_label
+
     text = input_textbox.get("1.0", "end-1c")
     words = re.findall(r'\b[a-zA-Z]+\b', text)  # Using regular expression to split by words including punctuation
+
+    start_time = time.time()
 
     for word in words:
         if runner.checkNeed(word.lower()):
@@ -80,6 +91,12 @@ def check_full_text():
 
     highlight_incorrect_words()
     print(dic)
+
+    # Calculate and display elapsed time
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    elapsed_time_label.config(text=f"Elapsed Time: {elapsed_time:.2f} seconds")
+    elapsed_time_label.pack(pady=10)
 
 
 def highlight_incorrect_words():
