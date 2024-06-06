@@ -1,7 +1,7 @@
 import ctypes
 import os
 
-pathC = os.path.abspath(r"libfun.so")
+pathC = os.path.abspath(r"editDistance.so")
 pathDictionary = os.path.abspath(r"Dictionary.txt")
 fun = ctypes.CDLL(pathC)
 fun.levenshtein.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
