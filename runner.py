@@ -24,6 +24,7 @@ def distance_all(word):
         s11 = word.encode('utf-8')
         s22 = target_word.encode('utf-8')
         des = fun.levenshtein(s11, s22)
+        # Store the closest word
         match des:
             case 1:
                 final[1].append(target_word)

@@ -55,6 +55,7 @@ def on_text_change(event):
     current_text = input_textbox.get("1.0", "end-1c")
     # to check if there is a word that was changed
     if current_text != previous_text:
+        # to find the changed word
         changed_word = find_changed_word(previous_text, current_text)
         if changed_word:
             distance_a(changed_word)  # find all the words that have under 5 distance with the changed word
