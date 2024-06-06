@@ -36,5 +36,5 @@ def distance_all(word):
     # just return the nearest words in the dictionary
     for i in range(1, 5):
         if len(final[i]) > 0:
-            final = {i: final[i]}
+            final = final[i]
             return final
