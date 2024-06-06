@@ -34,7 +34,7 @@ def distance_all(word):
                 final[2].append(target_word)
             case 4:
                 final[3].append(target_word)
-    # just return the nearest words in the dictionary
+    # just return the nearest words in the dictionary at least 5 of them
     tmp = []
     for i in range(0, 4):
         if len(tmp) < 5:
