@@ -17,7 +17,7 @@ def checkNeed(word):
 
 
 def distance_all(word):
-    final = {"1": [], "2": [], "3": [], "4": []}
+    final = {1: [], 2: [], 3: [], 4: []}
     f = open(pathDictionary)
     for target_word in f:
         target_word = target_word.rstrip()
@@ -26,13 +26,15 @@ def distance_all(word):
         des = fun.levenshtein(s11, s22)
         match des:
             case 1:
-                final["1"].append(target_word)
+                final[1].append(target_word)
             case 2:
-                final["2"].append(target_word)
+                final[2].append(target_word)
             case 3:
-                final["3"].append(target_word)
+                final[3].append(target_word)
             case 4:
-                final["4"].append(target_word)
-    return final
-
-
+                final[4].append(target_word)
+    # just return the nearest words in the dictionary
+    for i in range(1, 5):
+        if len(final[i]) > 0:
+            final = {i: final[i]}
+            return final
