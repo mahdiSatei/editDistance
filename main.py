@@ -3,13 +3,14 @@ from tkinter import ttk
 import runner
 import re
 import time
+import runner_copy
 
 dic = {}
 start_time = None
-
+languages = "English"
 
 def on_language_change(event):
-    global start_time
+    global start_time, languages
 
     selected_language = language_var.get()
 
@@ -17,6 +18,7 @@ def on_language_change(event):
         language_label.config(text="Enter text in English:")
     elif selected_language == "Persian":
         language_label.config(text=": متن خود را به فارسی وارد کنید")
+        languages = "Persian"
 
     language_combobox.pack_forget()
     show_textbox(selected_language)
@@ -51,9 +53,17 @@ def apply_right_tag(event=None):
 
 
 def find_closet_word(word):
-    if word not in dic.keys() and runner.check_need(word.lower()):
-        distance_words = runner.find_closet_distance(word.lower())
-        dic.update({word: distance_words})
+    if languages == "English":
+        if word not in dic.keys() and runner.check_need(word.lower()):
+            distance_words = runner.find_closet_distance(word.lower())
+            dic.update({word: distance_words})
+            return True
+    elif languages == "Persian":
+        if word not in dic.keys() and runner_copy.check_need(word):
+            distance_words = runner.find_closet_distance(word)
+            dic.update({word: distance_words})
+            return True
+    return False
 
 
 def check_text(event):
@@ -63,8 +73,7 @@ def check_text(event):
     if words:
         last_word = words[-1].strip()
         print("Typed word:", last_word)
-        if runner.check_need(last_word.lower()):  # If the word needs checking
-            find_closet_word(last_word)
+        if find_closet_word(last_word):  # If the word needs checking
             highlight_incorrect_words()
             print(dic)
         else:
@@ -86,8 +95,7 @@ def check_full_text():
     start_time = time.time()
 
     for word in words:
-        if runner.check_need(word.lower()):
-            find_closet_word(word)
+        find_closet_word(word)
 
     highlight_incorrect_words()
     print(dic)
