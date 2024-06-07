@@ -25,8 +25,8 @@ def find_closet_distance(target):
     # finding the distance for the target and every word in dictionary
     for word in dictionary:
         word = word.rstrip()
-        word = word.encode('utf-8')
-        distance = edit_distance.levenshtein(target, word)
+        word_encode = word.encode('utf-8')
+        distance = edit_distance.levenshtein(target, word_encode)
         # Store the closest word
         match distance:
             case 1:
