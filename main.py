@@ -10,19 +10,18 @@ start_time = None
 languages = "English"
 
 def on_language_change(event):
-    global start_time, languages
+    global languages
 
     selected_language = language_var.get()
+    languages = selected_language
 
     if selected_language == "English":
         language_label.config(text="Enter text in English:")
     elif selected_language == "Persian":
         language_label.config(text=": متن خود را به فارسی وارد کنید")
-        languages = "Persian"
 
     language_combobox.pack_forget()
     show_textbox(selected_language)
-
 
 def show_textbox(selected_language):
     global input_textbox, check_button, elapsed_time_label
@@ -47,10 +46,8 @@ def show_textbox(selected_language):
     # Initialize the elapsed time label but do not pack it yet
     elapsed_time_label = tk.Label(root, text="Elapsed Time: 0.00 seconds", font="tahoma")
 
-
 def apply_right_tag(event=None):
     input_textbox.tag_add('right', '1.0', 'end')
-
 
 def find_closet_word(word):
     if languages == "English":
@@ -60,15 +57,18 @@ def find_closet_word(word):
             return True
     elif languages == "Persian":
         if word not in dic.keys() and runner_copy.check_need(word):
-            distance_words = runner.find_closet_distance(word)
+            distance_words = runner_copy.find_closet_distance(word)
             dic.update({word: distance_words})
             return True
     return False
 
-
 def check_text(event):
     text = input_textbox.get("1.0", "end-1c")
-    words = re.findall(r'\b[a-zA-Z]+\b', text)  # Using regular expression to split by words including punctuation
+
+    if languages == "English":
+        words = re.findall(r'\b[a-zA-Z]+\b', text)
+    elif languages == "Persian":
+        words = re.findall(r'\b[\u0600-\u06FF]+\b', text)
 
     if words:
         last_word = words[-1].strip()
@@ -85,12 +85,15 @@ def check_text(event):
             dic.pop(i)
             highlight_incorrect_words()
 
-
 def check_full_text():
     global start_time, elapsed_time_label
 
     text = input_textbox.get("1.0", "end-1c")
-    words = re.findall(r'\b[a-zA-Z]+\b', text)  # Using regular expression to split by words including punctuation
+
+    if languages == "English":
+        words = re.findall(r'\b[a-zA-Z]+\b', text)
+    elif languages == "Persian":
+        words = re.findall(r'\b[\u0600-\u06FF]+\b', text)
 
     start_time = time.time()
 
@@ -106,10 +109,13 @@ def check_full_text():
     elapsed_time_label.config(text=f"Elapsed Time: {elapsed_time:.2f} seconds")
     elapsed_time_label.pack(pady=10)
 
-
 def highlight_incorrect_words():
     text = input_textbox.get("1.0", "end-1c")
-    words = re.findall(r'\b[a-zA-Z]+\b', text)  # Using regular expression to split by words including punctuation
+
+    if languages == "English":
+        words = re.findall(r'\b[a-zA-Z]+\b', text)
+    elif languages == "Persian":
+        words = re.findall(r'\b[\u0600-\u06FF]+\b', text)
 
     input_textbox.tag_remove("incorrect", "1.0", "end")
 
@@ -122,7 +128,6 @@ def highlight_incorrect_words():
                 input_textbox.tag_add("incorrect", start_index, end_index)
                 start_index = end_index
 
-
 def paste(event):
     try:
         clipboard_content = root.clipboard_get()
@@ -131,7 +136,6 @@ def paste(event):
         return 'break'  # Prevent the default paste action
     except tk.TclError:
         pass
-
 
 def show_suggestions_menu(event):
     word_index = input_textbox.index(tk.CURRENT)  # Get index of clicked word
@@ -145,17 +149,15 @@ def show_suggestions_menu(event):
                 suggestions_menu.add_command(label=suggestion, command=lambda s=suggestion: replace_word(word, s))
             suggestions_menu.tk_popup(event.x_root, event.y_root)
 
-
 def replace_word(word_to_replace, new_word):
     start_index = input_textbox.search(word_to_replace, "1.0", tk.END)
     end_index = f"{start_index}+{len(word_to_replace)}c"
     input_textbox.delete(start_index, end_index)
     input_textbox.insert(start_index, new_word)
 
-
 root = tk.Tk()
-root.title("Language Selector")
-root.geometry("300x300")
+root.title("Edit distance")
+root.geometry("500x500")
 
 language_label = tk.Label(root, text="Select the language:", font="tahoma")
 language_label.pack(pady=10)
