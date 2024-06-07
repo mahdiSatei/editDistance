@@ -50,9 +50,9 @@ def apply_right_tag(event=None):
     input_textbox.tag_add('right', '1.0', 'end')
 
 
-def distance_a(word):
-    if word not in dic.keys() and runner.checkNeed(word.lower()):
-        distance_words = runner.distance_all(word.lower())
+def find_closet_word(word):
+    if word not in dic.keys() and runner.check_need(word.lower()):
+        distance_words = runner.find_closet_distance(word.lower())
         dic.update({word: distance_words})
 
 
@@ -63,8 +63,8 @@ def check_text(event):
     if words:
         last_word = words[-1].strip()
         print("Typed word:", last_word)
-        if runner.checkNeed(last_word.lower()):  # If the word needs checking
-            distance_a(last_word)
+        if runner.check_need(last_word.lower()):  # If the word needs checking
+            find_closet_word(last_word)
             highlight_incorrect_words()
             print(dic)
         else:
@@ -86,8 +86,8 @@ def check_full_text():
     start_time = time.time()
 
     for word in words:
-        if runner.checkNeed(word.lower()):
-            distance_a(word)
+        if runner.check_need(word.lower()):
+            find_closet_word(word)
 
     highlight_incorrect_words()
     print(dic)

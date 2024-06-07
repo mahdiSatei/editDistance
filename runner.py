@@ -1,43 +1,46 @@
 import ctypes
 import os
 
-pathC = os.path.abspath(r"editDistance.so")
-pathDictionary = os.path.abspath(r"Dictionary.txt")
-fun = ctypes.CDLL(pathC)
-fun.levenshtein.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+path_function = os.path.abspath(r"editDistance.so")
+path_dictionary = os.path.abspath(r"DictionaryEnglish.txt")
+edit_distance = ctypes.CDLL(path_function)
+edit_distance.levenshtein.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
 
 
-def checkNeed(word):
-    f = open(pathDictionary)
-    for target in f:
-        target = target.rstrip()
-        if target == word:
+# to check if the word is not correctly written
+def check_need(target):
+    dictionary = open(path_dictionary)
+    for word in dictionary:
+        word = word.rstrip()
+        if word == target:
             return False
     return True
 
 
-def distance_all(word):
+# find the closet word to the incorrectly written word
+def find_closet_distance(target):
     final = [[], [], [], []]
-    f = open(pathDictionary)
-    for target_word in f:
-        target_word = target_word.rstrip()
-        s11 = word.encode('utf-8')
-        s22 = target_word.encode('utf-8')
-        des = fun.levenshtein(s11, s22)
+    dictionary = open(path_dictionary)
+    target = target.encode('utf-8')
+    # finding the distance for the target and every word in dictionary
+    for word in dictionary:
+        word = word.rstrip()
+        word = word.encode('utf-8')
+        distance = edit_distance.levenshtein(target, word)
         # Store the closest word
-        match des:
+        match distance:
             case 1:
-                final[0].append(target_word)
+                final[0].append(word)
             case 2:
-                final[1].append(target_word)
+                final[1].append(word)
             case 3:
-                final[2].append(target_word)
+                final[2].append(word)
             case 4:
-                final[3].append(target_word)
+                final[3].append(word)
     # just return the nearest words in the dictionary at least 5 of them
-    tmp = []
+    closest_word = []
     for i in range(0, 4):
-        if len(tmp) < 5:
+        if len(closest_word) < 5:
             for x in final[i]:
-                tmp.append(x)
-    return tmp
+                closest_word.append(x)
+    return closest_word
