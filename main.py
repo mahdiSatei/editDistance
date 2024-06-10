@@ -92,6 +92,7 @@ def on_text_change(event):
 
 
 def find_changed_word(old_text, new_text):
+    old_words, new_words = [], []
     if languages == "English":
         old_words = re.findall(r'\b[a-zA-Z]+\b', old_text)
         new_words = re.findall(r'\b[a-zA-Z]+\b', new_text)
@@ -107,7 +108,7 @@ def find_changed_word(old_text, new_text):
 
 def check_full_text():
     global start_time, elapsed_time_label, incorrect_word_count_label
-
+    words = []
     text = input_textbox.get("1.0", "end-1c")
 
     if languages == "English":
@@ -136,7 +137,7 @@ def check_full_text():
 
 def highlight_incorrect_words():
     text = input_textbox.get("1.0", "end-1c")
-
+    words = []
     if languages == "English":
         words = re.findall(r'\b[a-zA-Z]+\b', text)
     elif languages == "Persian":
