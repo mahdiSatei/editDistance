@@ -20,14 +20,14 @@ def on_language_change(event):
     elif selected_language == "Persian":
         language_label.config(text=": متن خود را به فارسی وارد کنید")
 
-    language_combobox.pack_forget()
+    language_combobox.grid_forget()
     show_textbox(selected_language)
 
 def show_textbox(selected_language):
-    global input_textbox, check_button, elapsed_time_label
+    global input_textbox, check_button, elapsed_time_label, incorrect_word_count_label
 
-    input_textbox = tk.Text(root, height=10, width=40, wrap="word", font="tahoma")
-    input_textbox.pack(pady=10)
+    input_textbox = tk.Text(root, height=10, width=40, wrap="word", font="tahoma", bd=2, relief="solid", bg="white")
+    input_textbox.grid(row=1, column=0, padx=10, pady=10, sticky="w")
 
     if selected_language == "Persian":
         input_textbox.tag_configure('right', justify='right')
@@ -38,13 +38,16 @@ def show_textbox(selected_language):
     input_textbox.bind('<Control-v>', paste)  # Bind paste event to paste method
     input_textbox.bind("<Button-3>", show_suggestions_menu)  # Bind right-click event to show_suggestions_menu
 
-    check_button = tk.Button(root, text="Check Text", font="tahoma", command=check_full_text)
-    check_button.pack(pady=10)
+    check_button = ttk.Button(root, text="Check Text", command=check_full_text)
+    check_button.grid(row=1, column=1, padx=10, pady=20, sticky="w")
 
     input_textbox.tag_configure("incorrect", foreground="red", underline=True)
 
-    # Initialize the elapsed time label but do not pack it yet
-    elapsed_time_label = tk.Label(root, text="Elapsed Time: 0.00 seconds", font="tahoma")
+    # Initialize the elapsed time label but do not grid it yet
+    elapsed_time_label = ttk.Label(root, text="Elapsed Time: 0.00 seconds", font="tahoma")
+
+    # Initialize the incorrect word count label but do not grid it yet
+    incorrect_word_count_label = ttk.Label(root, text="Incorrect Words: 0", font="tahoma")
 
 def apply_right_tag(event=None):
     input_textbox.tag_add('right', '1.0', 'end')
@@ -72,12 +75,8 @@ def check_text(event):
 
     if words:
         last_word = words[-1].strip()
-        print("Typed word:", last_word)
         if find_closet_word(last_word):  # If the word needs checking
             highlight_incorrect_words()
-            print(dic)
-        else:
-            print("Word is correct")
 
     # Remove words that are not currently in the input text
     for i in list(dic.keys()):
@@ -86,7 +85,7 @@ def check_text(event):
             highlight_incorrect_words()
 
 def check_full_text():
-    global start_time, elapsed_time_label
+    global start_time, elapsed_time_label, incorrect_word_count_label
 
     text = input_textbox.get("1.0", "end-1c")
 
@@ -101,13 +100,17 @@ def check_full_text():
         find_closet_word(word)
 
     highlight_incorrect_words()
-    print(dic)
 
     # Calculate and display elapsed time
     end_time = time.time()
     elapsed_time = end_time - start_time
     elapsed_time_label.config(text=f"Elapsed Time: {elapsed_time:.2f} seconds")
-    elapsed_time_label.pack(pady=10)
+    elapsed_time_label.grid(row=2, column=0, padx=10, pady=10, sticky="w")
+
+    # Count and display incorrect words
+    incorrect_word_count = len(dic)
+    incorrect_word_count_label.config(text=f"Incorrect Words: {incorrect_word_count}")
+    incorrect_word_count_label.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
 def highlight_incorrect_words():
     text = input_textbox.get("1.0", "end-1c")
@@ -144,7 +147,7 @@ def show_suggestions_menu(event):
     if word in dic:
         suggestions = dic[word]
         if suggestions:
-            suggestions_menu = tk.Menu(root, tearoff=0)
+            suggestions_menu = tk.Menu(root, tearoff=0, bg="lightblue")
             for suggestion in suggestions:
                 suggestions_menu.add_command(label=suggestion, command=lambda s=suggestion: replace_word(word, s))
             suggestions_menu.tk_popup(event.x_root, event.y_root)
@@ -156,17 +159,18 @@ def replace_word(word_to_replace, new_word):
     input_textbox.insert(start_index, new_word)
 
 root = tk.Tk()
-root.title("Edit distance")
-root.geometry("500x500")
+root.title("Edit Distance")
+root.geometry("600x400")
+root.configure(bg="lightblue")
 
-language_label = tk.Label(root, text="Select the language:", font="tahoma")
-language_label.pack(pady=10)
+language_label = ttk.Label(root, text="Select the language:", font="tahoma", background="lightblue")
+language_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 
 language_var = tk.StringVar()
 language_combobox = ttk.Combobox(root, textvariable=language_var, width=20)
 language_combobox['values'] = ("English", "Persian")
 language_combobox.bind("<<ComboboxSelected>>", on_language_change)
-language_combobox.pack(pady=10)
+language_combobox.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
 root.bind("<Key>", check_text)  # Bind KeyPress event to check_text method
 
