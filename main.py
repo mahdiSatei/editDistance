@@ -9,6 +9,7 @@ dic = {}
 start_time = None
 languages = "English"
 
+
 def on_language_change(event):
     global languages
 
@@ -23,6 +24,7 @@ def on_language_change(event):
     language_combobox.grid_forget()
     show_textbox(selected_language)
 
+
 def show_textbox(selected_language):
     global input_textbox, check_button, elapsed_time_label, incorrect_word_count_label
 
@@ -34,7 +36,7 @@ def show_textbox(selected_language):
         apply_right_tag()
         input_textbox.bind('<<Modified>>', apply_right_tag)
 
-    input_textbox.bind('<Key>', check_text)  # Bind KeyPress event to check_text method
+    input_textbox.bind('<Key>', on_text_change)  # Bind KeyPress event to check_text method
     input_textbox.bind('<Control-v>', paste)  # Bind paste event to paste method
     input_textbox.bind("<Button-3>", show_suggestions_menu)  # Bind right-click event to show_suggestions_menu
 
@@ -49,8 +51,10 @@ def show_textbox(selected_language):
     # Initialize the incorrect word count label but do not grid it yet
     incorrect_word_count_label = ttk.Label(root, text="Incorrect Words: 0", font="tahoma")
 
+
 def apply_right_tag(event=None):
     input_textbox.tag_add('right', '1.0', 'end')
+
 
 def find_closet_word(word):
     if languages == "English":
@@ -65,24 +69,41 @@ def find_closet_word(word):
             return True
     return False
 
-def check_text(event):
-    text = input_textbox.get("1.0", "end-1c")
 
+def on_text_change(event):
+    global previous_text
+    # getting the text from input
+    current_text = input_textbox.get("1.0", "end-1c")
+    # to check if there is a word that was changed
+    if current_text != previous_text:
+        # to find the changed word
+        changed_word = find_changed_word(previous_text, current_text)
+        if changed_word:
+            find_closet_word(changed_word)  # find all the words that have under 5 distance with the changed word
+            print(dic)
+            # if a word is not written, but it was before it will remove it from dic, so we just have the words that
+            # are typed
+            for i in dic.keys():
+                if i not in current_text.split():
+                    dic.pop(i)
+                    break
+            highlight_incorrect_words()
+        previous_text = current_text
+
+
+def find_changed_word(old_text, new_text):
     if languages == "English":
-        words = re.findall(r'\b[a-zA-Z]+\b', text)
+        old_words = re.findall(r'\b[a-zA-Z]+\b', old_text)
+        new_words = re.findall(r'\b[a-zA-Z]+\b', new_text)
     elif languages == "Persian":
-        words = re.findall(r'\b[\u0600-\u06FF]+\b', text)
+        old_words = re.findall(r'\b[\u0600-\u06FF]+\b', old_text)
+        new_words = re.findall(r'\b[\u0600-\u06FF]+\b', new_text)
 
-    if words:
-        last_word = words[-1].strip()
-        if find_closet_word(last_word):  # If the word needs checking
-            highlight_incorrect_words()
+    for word in new_words:
+        if word not in old_words:
+            return word
+    return None
 
-    # Remove words that are not currently in the input text
-    for i in list(dic.keys()):
-        if i not in words:
-            dic.pop(i)
-            highlight_incorrect_words()
 
 def check_full_text():
     global start_time, elapsed_time_label, incorrect_word_count_label
@@ -112,6 +133,7 @@ def check_full_text():
     incorrect_word_count_label.config(text=f"Incorrect Words: {incorrect_word_count}")
     incorrect_word_count_label.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
+
 def highlight_incorrect_words():
     text = input_textbox.get("1.0", "end-1c")
 
@@ -131,6 +153,7 @@ def highlight_incorrect_words():
                 input_textbox.tag_add("incorrect", start_index, end_index)
                 start_index = end_index
 
+
 def paste(event):
     try:
         clipboard_content = root.clipboard_get()
@@ -139,6 +162,7 @@ def paste(event):
         return 'break'  # Prevent the default paste action
     except tk.TclError:
         pass
+
 
 def show_suggestions_menu(event):
     word_index = input_textbox.index(tk.CURRENT)  # Get index of clicked word
@@ -152,17 +176,19 @@ def show_suggestions_menu(event):
                 suggestions_menu.add_command(label=suggestion, command=lambda s=suggestion: replace_word(word, s))
             suggestions_menu.tk_popup(event.x_root, event.y_root)
 
+
 def replace_word(word_to_replace, new_word):
     start_index = input_textbox.search(word_to_replace, "1.0", tk.END)
     end_index = f"{start_index}+{len(word_to_replace)}c"
     input_textbox.delete(start_index, end_index)
     input_textbox.insert(start_index, new_word)
 
+
 root = tk.Tk()
 root.title("Edit Distance")
 root.geometry("600x400")
 root.configure(bg="lightblue")
-
+previous_text = ""
 language_label = ttk.Label(root, text="Select the language:", font="tahoma", background="lightblue")
 language_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 
@@ -172,6 +198,6 @@ language_combobox['values'] = ("English", "Persian")
 language_combobox.bind("<<ComboboxSelected>>", on_language_change)
 language_combobox.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
-root.bind("<Key>", check_text)  # Bind KeyPress event to check_text method
+root.bind("<Key>", on_text_change)  # Bind KeyPress event to check_text method
 
 root.mainloop()
