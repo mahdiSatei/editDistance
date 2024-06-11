@@ -26,28 +26,28 @@ def on_language_change(event):
 def show_textbox(selected_language):
     global input_textbox, check_button, elapsed_time_label, incorrect_word_count_label
 
-    input_textbox = tk.Text(root, height=10, width=40, wrap="word", font="tahoma", bd=2, relief="solid", bg="white")
-    input_textbox.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+    input_textbox = tk.Text(main_frame, height=10, width=40, wrap="word", font="tahoma", bd=2, relief="solid", bg="white")
+    input_textbox.grid(row=1, column=0, padx=10, pady=(5, 10))
 
     if selected_language == "Persian":
         input_textbox.tag_configure('right', justify='right')
         apply_right_tag()
         input_textbox.bind('<<Modified>>', apply_right_tag)
 
-    input_textbox.bind('<Key>', check_text)  # Bind KeyPress event to check_text method
+    input_textbox.bind('<Key>', on_text_change)  # Bind KeyPress event to check_text method
     input_textbox.bind('<Control-v>', paste)  # Bind paste event to paste method
     input_textbox.bind("<Button-3>", show_suggestions_menu)  # Bind right-click event to show_suggestions_menu
 
-    check_button = ttk.Button(root, text="Check Text", command=check_full_text)
-    check_button.grid(row=1, column=1, padx=10, pady=20, sticky="w")
+    check_button = ttk.Button(main_frame, text="Check Text", command=check_full_text)
+    check_button.grid(row=2, column=0, padx=10, pady=10)
 
     input_textbox.tag_configure("incorrect", foreground="red", underline=True)
 
     # Initialize the elapsed time label but do not grid it yet
-    elapsed_time_label = ttk.Label(root, text="Elapsed Time: 0.00 seconds", font="tahoma")
+    elapsed_time_label = ttk.Label(result_frame, text="Elapsed Time: 0.00 seconds", font="tahoma", background="lightblue")
 
     # Initialize the incorrect word count label but do not grid it yet
-    incorrect_word_count_label = ttk.Label(root, text="Incorrect Words: 0", font="tahoma")
+    incorrect_word_count_label = ttk.Label(result_frame, text="Incorrect Words: 0", font="tahoma", background="lightblue")
 
 def apply_right_tag(event=None):
     input_textbox.tag_add('right', '1.0', 'end')
@@ -65,28 +65,43 @@ def find_closet_word(word):
             return True
     return False
 
-def check_text(event):
-    text = input_textbox.get("1.0", "end-1c")
+def on_text_change(event):
+    global previous_text
+    # getting the text from input
+    current_text = input_textbox.get("1.0", "end-1c")
+    # to check if there is a word that was changed
+    if current_text != previous_text:
+        # to find the changed word
+        changed_word = find_changed_word(previous_text, current_text)
+        if changed_word:
+            find_closet_word(changed_word)  # find all the words that have under 5 distance with the changed word
+            print(dic)
+            # if a word is not written, but it was before it will remove it from dic, so we just have the words that
+            # are typed
+            for i in list(dic.keys()):
+                if i not in current_text.split():
+                    dic.pop(i)
+                    break
+            highlight_incorrect_words()
+        previous_text = current_text
 
+def find_changed_word(old_text, new_text):
+    old_words, new_words = [], []
     if languages == "English":
-        words = re.findall(r'\b[a-zA-Z]+\b', text)
+        old_words = re.findall(r'\b[a-zA-Z]+\b', old_text)
+        new_words = re.findall(r'\b[a-zA-Z]+\b', new_text)
     elif languages == "Persian":
-        words = re.findall(r'\b[\u0600-\u06FF]+\b', text)
+        old_words = re.findall(r'\b[\u0600-\u06FF]+\b', old_text)
+        new_words = re.findall(r'\b[\u0600-\u06FF]+\b', new_text)
 
-    if words:
-        last_word = words[-1].strip()
-        if find_closet_word(last_word):  # If the word needs checking
-            highlight_incorrect_words()
-
-    # Remove words that are not currently in the input text
-    for i in list(dic.keys()):
-        if i not in words:
-            dic.pop(i)
-            highlight_incorrect_words()
+    for word in new_words:
+        if word not in old_words:
+            return word
+    return None
 
 def check_full_text():
     global start_time, elapsed_time_label, incorrect_word_count_label
-
+    words = []
     text = input_textbox.get("1.0", "end-1c")
 
     if languages == "English":
@@ -105,16 +120,16 @@ def check_full_text():
     end_time = time.time()
     elapsed_time = end_time - start_time
     elapsed_time_label.config(text=f"Elapsed Time: {elapsed_time:.2f} seconds")
-    elapsed_time_label.grid(row=2, column=0, padx=10, pady=10, sticky="w")
+    elapsed_time_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 
     # Count and display incorrect words
     incorrect_word_count = len(dic)
     incorrect_word_count_label.config(text=f"Incorrect Words: {incorrect_word_count}")
-    incorrect_word_count_label.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+    incorrect_word_count_label.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
 def highlight_incorrect_words():
     text = input_textbox.get("1.0", "end-1c")
-
+    words = []
     if languages == "English":
         words = re.findall(r'\b[a-zA-Z]+\b', text)
     elif languages == "Persian":
@@ -161,17 +176,29 @@ def replace_word(word_to_replace, new_word):
 root = tk.Tk()
 root.title("Edit Distance")
 root.geometry("600x400")
-root.configure(bg="lightblue")
+root.configure(bg="skyblue")
 
-language_label = ttk.Label(root, text="Select the language:", font="tahoma", background="lightblue")
-language_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+root.grid_columnconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=1)
+root.grid_rowconfigure(1, weight=1)
+
+top_frame = ttk.Frame(root, padding="10", style="TFrame")
+top_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
+
+main_frame = ttk.Frame(root, padding="10", style="TFrame")
+main_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
+
+result_frame = ttk.Frame(root, padding="10", style="TFrame")
+result_frame.grid(row=2, column=0, columnspan=2, sticky="ew")
+
+previous_text = ""
+language_label = ttk.Label(top_frame, text="Select the language:", font="tahoma", background="skyblue")
+language_label.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
 language_var = tk.StringVar()
-language_combobox = ttk.Combobox(root, textvariable=language_var, width=20)
+language_combobox = ttk.Combobox(top_frame, textvariable=language_var, width=20)
 language_combobox['values'] = ("English", "Persian")
 language_combobox.bind("<<ComboboxSelected>>", on_language_change)
-language_combobox.grid(row=0, column=1, padx=10, pady=10, sticky="w")
-
-root.bind("<Key>", check_text)  # Bind KeyPress event to check_text method
+language_combobox.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
 root.mainloop()
