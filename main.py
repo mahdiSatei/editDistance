@@ -3,105 +3,137 @@ from tkinter import ttk
 import runner
 import re
 import time
+import runner_copy
 
 dic = {}
 start_time = None
-
+languages = "English"
 
 def on_language_change(event):
-    global start_time
+    global languages
 
     selected_language = language_var.get()
+    languages = selected_language
 
     if selected_language == "English":
         language_label.config(text="Enter text in English:")
     elif selected_language == "Persian":
         language_label.config(text=": متن خود را به فارسی وارد کنید")
 
-    language_combobox.pack_forget()
+    language_combobox.grid_forget()
     show_textbox(selected_language)
 
-
 def show_textbox(selected_language):
-    global input_textbox, check_button, elapsed_time_label
+    global input_textbox, check_button, elapsed_time_label, incorrect_word_count_label
 
-    input_textbox = tk.Text(root, height=10, width=40, wrap="word", font="tahoma")
-    input_textbox.pack(pady=10)
+    input_textbox = tk.Text(main_frame, height=10, width=40, wrap="word", font="tahoma", bd=2, relief="solid", bg="white")
+    input_textbox.grid(row=1, column=0, padx=10, pady=(5, 10))
 
     if selected_language == "Persian":
         input_textbox.tag_configure('right', justify='right')
         apply_right_tag()
         input_textbox.bind('<<Modified>>', apply_right_tag)
 
-    input_textbox.bind('<Key>', check_text)  # Bind KeyPress event to check_text method
+    input_textbox.bind('<Key>', on_text_change)  # Bind KeyPress event to check_text method
     input_textbox.bind('<Control-v>', paste)  # Bind paste event to paste method
     input_textbox.bind("<Button-3>", show_suggestions_menu)  # Bind right-click event to show_suggestions_menu
 
-    check_button = tk.Button(root, text="Check Text", font="tahoma", command=check_full_text)
-    check_button.pack(pady=10)
+    check_button = ttk.Button(main_frame, text="Check Text", command=check_full_text)
+    check_button.grid(row=2, column=0, padx=10, pady=10)
 
     input_textbox.tag_configure("incorrect", foreground="red", underline=True)
 
-    # Initialize the elapsed time label but do not pack it yet
-    elapsed_time_label = tk.Label(root, text="Elapsed Time: 0.00 seconds", font="tahoma")
+    # Initialize the elapsed time label but do not grid it yet
+    elapsed_time_label = ttk.Label(result_frame, text="Elapsed Time: 0.00 seconds", font="tahoma", background="lightblue")
 
+    # Initialize the incorrect word count label but do not grid it yet
+    incorrect_word_count_label = ttk.Label(result_frame, text="Incorrect Words: 0", font="tahoma", background="lightblue")
 
 def apply_right_tag(event=None):
     input_textbox.tag_add('right', '1.0', 'end')
 
-
 def find_closet_word(word):
-    if word not in dic.keys() and runner.check_need(word.lower()):
-        distance_words = runner.find_closet_distance(word.lower())
-        dic.update({word: distance_words})
+    if languages == "English":
+        if word not in dic.keys() and runner.check_need(word.lower()):
+            distance_words = runner.find_closet_distance(word.lower())
+            dic.update({word: distance_words})
+            return True
+    elif languages == "Persian":
+        if word not in dic.keys() and runner_copy.check_need(word):
+            distance_words = runner_copy.find_closet_distance(word)
+            dic.update({word: distance_words})
+            return True
+    return False
 
-
-def check_text(event):
-    text = input_textbox.get("1.0", "end-1c")
-    words = re.findall(r'\b[a-zA-Z]+\b', text)  # Using regular expression to split by words including punctuation
-
-    if words:
-        last_word = words[-1].strip()
-        print("Typed word:", last_word)
-        if runner.check_need(last_word.lower()):  # If the word needs checking
-            find_closet_word(last_word)
-            highlight_incorrect_words()
+def on_text_change(event):
+    global previous_text
+    # getting the text from input
+    current_text = input_textbox.get("1.0", "end-1c")
+    # to check if there is a word that was changed
+    if current_text != previous_text:
+        # to find the changed word
+        changed_word = find_changed_word(previous_text, current_text)
+        if changed_word:
+            find_closet_word(changed_word)  # find all the words that have under 5 distance with the changed word
             print(dic)
-        else:
-            print("Word is correct")
-
-    # Remove words that are not currently in the input text
-    for i in list(dic.keys()):
-        if i not in words:
-            dic.pop(i)
+            # if a word is not written, but it was before it will remove it from dic, so we just have the words that
+            # are typed
+            for i in list(dic.keys()):
+                if i not in current_text.split():
+                    dic.pop(i)
+                    break
             highlight_incorrect_words()
+        previous_text = current_text
 
+def find_changed_word(old_text, new_text):
+    old_words, new_words = [], []
+    if languages == "English":
+        old_words = re.findall(r'\b[a-zA-Z]+\b', old_text)
+        new_words = re.findall(r'\b[a-zA-Z]+\b', new_text)
+    elif languages == "Persian":
+        old_words = re.findall(r'\b[\u0600-\u06FF]+\b', old_text)
+        new_words = re.findall(r'\b[\u0600-\u06FF]+\b', new_text)
+
+    for word in new_words:
+        if word not in old_words:
+            return word
+    return None
 
 def check_full_text():
-    global start_time, elapsed_time_label
-
+    global start_time, elapsed_time_label, incorrect_word_count_label
+    words = []
     text = input_textbox.get("1.0", "end-1c")
-    words = re.findall(r'\b[a-zA-Z]+\b', text)  # Using regular expression to split by words including punctuation
+
+    if languages == "English":
+        words = re.findall(r'\b[a-zA-Z]+\b', text)
+    elif languages == "Persian":
+        words = re.findall(r'\b[\u0600-\u06FF]+\b', text)
 
     start_time = time.time()
 
     for word in words:
-        if runner.check_need(word.lower()):
-            find_closet_word(word)
+        find_closet_word(word)
 
     highlight_incorrect_words()
-    print(dic)
 
     # Calculate and display elapsed time
     end_time = time.time()
     elapsed_time = end_time - start_time
     elapsed_time_label.config(text=f"Elapsed Time: {elapsed_time:.2f} seconds")
-    elapsed_time_label.pack(pady=10)
+    elapsed_time_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 
+    # Count and display incorrect words
+    incorrect_word_count = len(dic)
+    incorrect_word_count_label.config(text=f"Incorrect Words: {incorrect_word_count}")
+    incorrect_word_count_label.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
 def highlight_incorrect_words():
     text = input_textbox.get("1.0", "end-1c")
-    words = re.findall(r'\b[a-zA-Z]+\b', text)  # Using regular expression to split by words including punctuation
+    words = []
+    if languages == "English":
+        words = re.findall(r'\b[a-zA-Z]+\b', text)
+    elif languages == "Persian":
+        words = re.findall(r'\b[\u0600-\u06FF]+\b', text)
 
     input_textbox.tag_remove("incorrect", "1.0", "end")
 
@@ -114,7 +146,6 @@ def highlight_incorrect_words():
                 input_textbox.tag_add("incorrect", start_index, end_index)
                 start_index = end_index
 
-
 def paste(event):
     try:
         clipboard_content = root.clipboard_get()
@@ -124,7 +155,6 @@ def paste(event):
     except tk.TclError:
         pass
 
-
 def show_suggestions_menu(event):
     word_index = input_textbox.index(tk.CURRENT)  # Get index of clicked word
     word = input_textbox.get(f"{word_index} wordstart", f"{word_index} wordend")  # Get the clicked word
@@ -132,11 +162,10 @@ def show_suggestions_menu(event):
     if word in dic:
         suggestions = dic[word]
         if suggestions:
-            suggestions_menu = tk.Menu(root, tearoff=0)
+            suggestions_menu = tk.Menu(root, tearoff=0, bg="lightblue")
             for suggestion in suggestions:
                 suggestions_menu.add_command(label=suggestion, command=lambda s=suggestion: replace_word(word, s))
             suggestions_menu.tk_popup(event.x_root, event.y_root)
-
 
 def replace_word(word_to_replace, new_word):
     start_index = input_textbox.search(word_to_replace, "1.0", tk.END)
@@ -144,20 +173,32 @@ def replace_word(word_to_replace, new_word):
     input_textbox.delete(start_index, end_index)
     input_textbox.insert(start_index, new_word)
 
-
 root = tk.Tk()
-root.title("Language Selector")
-root.geometry("300x300")
+root.title("Edit Distance")
+root.geometry("600x400")
+root.configure(bg="skyblue")
 
-language_label = tk.Label(root, text="Select the language:", font="tahoma")
-language_label.pack(pady=10)
+root.grid_columnconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=1)
+root.grid_rowconfigure(1, weight=1)
+
+top_frame = ttk.Frame(root, padding="10", style="TFrame")
+top_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
+
+main_frame = ttk.Frame(root, padding="10", style="TFrame")
+main_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
+
+result_frame = ttk.Frame(root, padding="10", style="TFrame")
+result_frame.grid(row=2, column=0, columnspan=2, sticky="ew")
+
+previous_text = ""
+language_label = ttk.Label(top_frame, text="Select the language:", font="tahoma", background="skyblue")
+language_label.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
 language_var = tk.StringVar()
-language_combobox = ttk.Combobox(root, textvariable=language_var, width=20)
+language_combobox = ttk.Combobox(top_frame, textvariable=language_var, width=20)
 language_combobox['values'] = ("English", "Persian")
 language_combobox.bind("<<ComboboxSelected>>", on_language_change)
-language_combobox.pack(pady=10)
-
-root.bind("<Key>", check_text)  # Bind KeyPress event to check_text method
+language_combobox.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
 root.mainloop()
